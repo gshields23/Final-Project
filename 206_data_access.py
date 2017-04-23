@@ -50,21 +50,30 @@ import twitter_info
 # 9 - Load data into databases																						- Done! (may have to change)
 #10 - Process data and create an output file 																		-
 #11 - Write that data to a text file as a summary stats page														-
+																													
 																													#1/2 way done!
 
 
 
 # I want to set up my class Movie here. I know a lot of my code will change once I get this class set up.
-# class Movie(diction):
-# 	def __init__(self):
-# 		self.title
-# 		self.director
-# 		self.imdb_rating
-# 		self.list_actors
-# 		self.num_langs
 
 
-listofmovies = ['Lion', 'Moonlight', 'La La Land']
+
+class Movie():
+	diction = {'Moonlight', 'La La Land', 'Lion'}
+	def __init__(self, diction):
+		self.title = diction['Title']
+		self.director = diction['Director'].split(',')[0]
+		self.imdb_rating = diction['Ratings']
+		self.list_actors = diction['Actors']
+		self.num_langs = len(diction['Language'])
+		
+
+	def __str__(self, diction): #still figuring out what to do with this
+		return "{} from {}".format(self.list_actors, self.title)
+
+
+
 
 #TWITTER SET UP CODE - below is my set up for Twitter caching.
 consumer_key = twitter_info.consumer_key
@@ -104,7 +113,7 @@ def getTwitterUsername(actor_username):
 
 	return statuses
 
-users_list = getTwitterUsername('ryangosling') #What I'm using to enter info into my database
+users_list = getTwitterUsername('La La Land') #What I'm using to enter info into my database
 
 def getTwitterMentions(title): #Here is my data for seeing all public tweets/mentions on Twitter. 
 #I thought that if I put in 'La La Land' I'd get data about all Tweets from La La Land, but I actually just got my
@@ -127,7 +136,7 @@ def getTwitterMentions(title): #Here is my data for seeing all public tweets/men
 	return statuses
 	
 
-mentions_list = getTwitterMentions('ryangosling') #What I'm using to enter info into my database
+mentions_list = getTwitterMentions('La La Land') #What I'm using to enter info into my database
 
 #OMDB CACHING - here is where I get and cache data from OMDB. 
 def getdata_omdb(title):
@@ -220,13 +229,13 @@ firstactor.append(diction['Actors'].split(',', 1)[0]) #I had to do this to get t
 omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
 omdb_list = list(omdb_zip)
 
-print(type(omdb_zip))
+# print(type(omdb_zip))
 
 for movie_info in omdb_list:
 	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
 	cur.execute(y, movie_info)
 
-print(firstactor)
+# print(firstactor)
 
 #TWITTER PROCESSING FOR TWEETS (MENTIONS: BE SURE TO USE THE MOVIE ID NOT THE MOVIE TITLE)
 #I made this one last because it refers to other tables (Movies)
@@ -257,10 +266,20 @@ conn.commit()
 conn.close()
 
 
+# #CREATING A CSV FILE
+# outfile = open('finalproject.csv', 'w')
+# outfile.write('self.title, self.list_actors\n')
+
+
+# for x in possible_airports:
+#     try:
+#         outfile.write('{}, {}, {}, {}\n'.format(*extract_airport_data(x)))
+
+#     except:
+#         print "Failed for airport " + x
+
 
 #Tests at the end of your file that accord with those instructions (will test that you completed those instructions correctly!)
-
-# # Put your tests here, with any edits you now need from when you turned them in with your project plan.
 class Tests(unittest.TestCase):
 	def test1(self): #tests that there are 6 rows in the Tweets table
 		conn = sqlite3.connect('final_project.db') 
