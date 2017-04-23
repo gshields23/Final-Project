@@ -58,20 +58,43 @@ import twitter_info
 # I want to set up my class Movie here. I know a lot of my code will change once I get this class set up.
 
 
+movie_titles = ['Moonlight', 'La La Land', 'Lion']
 
 class Movie():
-	diction = {'Moonlight', 'La La Land', 'Lion'}
 	def __init__(self, diction):
 		self.title = diction['Title']
 		self.director = diction['Director'].split(',')[0]
 		self.imdb_rating = diction['Ratings']
 		self.list_actors = diction['Actors']
 		self.num_langs = len(diction['Language'])
+		self.actor = diction['Actors'].split(',', 1)[0]
 		
 
-	def __str__(self, diction): #still figuring out what to do with this
+	def __str__(self): #still figuring out what to do with this
 		return "{} from {}".format(self.list_actors, self.title)
 
+	def getActor(self):
+		return self.actor
+
+	def getTitle(self):
+		return self.title
+
+class Twitter():
+	def __init__(self, diction):
+		self.text = diction['statuses']['text']
+		self.id = diction['id']
+		self.user = diction['user']['name']
+		self.movie = 'none'
+		self.favorites = diction['user']['favourites_count']
+		self.retweets = diction['retweet_count']
+		self.userid = diction['user']['id_str']
+		self.screenname = diction['user']['screen_name']
+		self.followers = diction['user']['followers_count']
+
+
+#OMDB search
+#create movie objects
+#search twitter using movie objects 
 
 
 
@@ -94,61 +117,17 @@ try:
 except:
 	CACHE_DICTION = {}
 
-#TWITTER API - here is my first function about retrieving information about a user specifically on Twitter.
-#I tested it with Ryan Gosling's username. He's the highest paid actor in La La Land (or the first mentioned)
-def getTwitterUsername(actor_username):
-	unique_identifier = "twitter_{}".format(actor_username)
-	if unique_identifier in CACHE_DICTION:
-		print('using cached data for', actor_username)
-		#twitter_results = CACHE_DICTION[unique_identifier]
-		statuses = CACHE_DICTION[unique_identifier]
-		pass
-	else:
-		print('getting data from internet for', actor_username)
-		statuses = api.user_timeline(screen_name=actor_username, count = 100)
-		CACHE_DICTION[unique_identifier] = statuses
-		f=open(CACHE_FNAME, 'w')
-		f.write(json.dumps(CACHE_DICTION))
-		f.close()
-
-	return statuses
-
-users_list = getTwitterUsername('La La Land') #What I'm using to enter info into my database
-
-def getTwitterMentions(title): #Here is my data for seeing all public tweets/mentions on Twitter. 
-#I thought that if I put in 'La La Land' I'd get data about all Tweets from La La Land, but I actually just got my
-#personal information. When I put in 'ryangosling' I get all of his tweets. I'm not sure if this has to do with the fact
-#that I don't have a class yet or not, but I'll need to fix this.
-	unique_identifier = "twitter_{}".format(title)
-	if unique_identifier in CACHE_DICTION:
-		print('using cached data for', title)
-		#twitter_results = CACHE_DICTION[unique_identifier]
-		statuses = CACHE_DICTION[unique_identifier]
-		pass
-	else:
-		print('getting data from internet for', title)
-		statuses = api.search(q=title, count = 100) #search should sift through all public data
-		CACHE_DICTION[unique_identifier] = statuses
-		f=open(CACHE_FNAME, 'w')
-		f.write(json.dumps(CACHE_DICTION))
-		f.close()
-
-	return statuses
-	
-
-mentions_list = getTwitterMentions('La La Land') #What I'm using to enter info into my database
-
 #OMDB CACHING - here is where I get and cache data from OMDB. 
 def getdata_omdb(title):
 	unique_identifier = "omdb_{}".format(title)
 
 	if unique_identifier in CACHE_DICTION:
-		print('using cached data for', title)
+		print('using cached OMDB data for', title)
 		omdb_dict = CACHE_DICTION[unique_identifier]
 		return omdb_dict
 
 	else:
-		print('getting data from internet for', title)
+		print('getting data from IMDB for', title)
 		params_dict = {}
 		params_dict['t'] = title #this is super helpful for this project. If the title changes, it's easy to get different data
 		response = requests.get('http://www.omdbapi.com/', params = params_dict)
@@ -160,7 +139,65 @@ def getdata_omdb(title):
 
 		return omdb_dict
 
-diction = getdata_omdb('La La Land') #What I'm using to enter info into my database
+
+movieinfo = []
+for movie in movie_titles:
+	x = Movie(getdata_omdb(movie))
+	movieinfo.append(x)
+
+
+
+#TWITTER API - here is my first function about retrieving information about a user specifically on Twitter.
+#I tested it with Ryan Gosling's username. He's the highest paid actor in La La Land (or the first mentioned)
+def getTwitterUsername(actor_username):
+	unique_identifier = "twitter_{}".format(actor_username)
+	if unique_identifier in CACHE_DICTION:
+		print('using cached Twitter data for', actor_username)
+		statuses = CACHE_DICTION[unique_identifier]
+		pass
+	else:
+		print('getting data from Twitter for', actor_username)
+		statuses = api.user_timeline(screen_name=actor_username, count = 100)
+		CACHE_DICTION[unique_identifier] = statuses
+		f=open(CACHE_FNAME, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+
+	return statuses
+
+
+def getTwitterMentions(title): #Here is my data for seeing all public tweets/mentions on Twitter. 
+#I thought that if I put in 'La La Land' I'd get data about all Tweets from La La Land, but I actually just got my
+#personal information. When I put in 'ryangosling' I get all of his tweets. I'm not sure if this has to do with the fact
+#that I don't have a class yet or not, but I'll need to fix this.
+	unique_identifier = "twitter_{}".format(title)
+	if unique_identifier in CACHE_DICTION:
+		print('using cached Twitter data for', title)
+		#twitter_results = CACHE_DICTION[unique_identifier]
+		statuses = CACHE_DICTION[unique_identifier]
+		pass
+	else:
+		print('getting data from Twitter for', title)
+		statuses = api.search(q=title, count = 100) #search should sift through all public data
+		CACHE_DICTION[unique_identifier] = statuses
+		f=open(CACHE_FNAME, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+
+	return statuses
+	
+
+
+twitterinfo = []
+for movie in movie_titles:
+	if movie == 'Lion':
+		print (movie)
+		y = getTwitterMentions(movie)
+		for x in y['statuses']:
+			print (x['text'])	
+
+
+#diction = getdata_omdb('La La Land') #What I'm using to enter info into my database
 #This code successfully works and I am more confident in it than my Twitter data.
 
 #Code that creates a database file and tables as your project plan explains, such that your program can be run over and over again without error and without duplicate rows in your tables.
@@ -190,80 +227,82 @@ cur.execute(table)
 
 
 
-#TWITTER PROCESSING FOR USERS - here I'm mining for the specific data that I want to upload to the database (for OMDB too)
-users_userid = []
-users_screenname = []
-users_favs = []
-users_followers = []
+# #TWITTER PROCESSING FOR USERS - here I'm mining for the specific data that I want to upload to the database (for OMDB too)
+# users_userid = []
+# users_screenname = []
+# users_favs = []
+# users_followers = []
 
-for users in users_list:
-	users_userid.append(users['user']['id_str'])
-	users_screenname.append(users['user']['screen_name'])
-	users_favs.append(users['user']['favourites_count'])
-	users_followers.append(users['user']['followers_count']) #I added this to see which actor would have the most followers
+# for users in users_list:
+# 	users_userid.append(users['user']['id_str'])
+# 	users_screenname.append(users['user']['screen_name'])
+# 	users_favs.append(users['user']['favourites_count'])
+# 	users_followers.append(users['user']['followers_count']) #I added this to see which actor would have the most followers
 
-user_list = list(zip(users_userid, users_screenname, users_favs, users_followers))
+# user_list = list(zip(users_userid, users_screenname, users_favs, users_followers))
 
-for users in user_list:
-	z = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
-	cur.execute(z, users)
-
-
-#OMDB PROCESSING
-id = []
-title = []
-director = []
-num_langs = []
-imdb_rating = []
-firstactor = []
+# for users in user_list:
+# 	z = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
+# 	cur.execute(z, users)
 
 
-id.append(diction['imdbID'])
-title.append(diction['Title'])
-director.append(diction['Director'])
-num_langs.append(len(diction['Language']))
-imdb_rating.append(diction['imdbRating'])
-firstactor.append(diction['Actors'].split(',', 1)[0]) #I had to do this to get the first full name listed
+# # #OMDB PROCESSING
+# id = []
+# title = []
+# director = []
+# num_langs = []
+# imdb_rating = []
+# firstactor = []
 
 
-omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
-omdb_list = list(omdb_zip)
+# id.append(diction['imdbID'])
+# title.append(diction['Title'])
+# director.append(diction['Director'])
+# num_langs.append(len(diction['Language']))
+# imdb_rating.append(diction['imdbRating'])
+# firstactor.append(diction['Actors'].split(',', 1)[0]) #I had to do this to get the first full name listed
 
-# print(type(omdb_zip))
 
-for movie_info in omdb_list:
-	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
-	cur.execute(y, movie_info)
+# omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
+# omdb_list = list(omdb_zip)
+
+# # print(type(omdb_zip))
+
+# for movie_info in omdb_list:
+# 	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
+# 	cur.execute(y, movie_info)
 
 # print(firstactor)
 
 #TWITTER PROCESSING FOR TWEETS (MENTIONS: BE SURE TO USE THE MOVIE ID NOT THE MOVIE TITLE)
 #I made this one last because it refers to other tables (Movies)
-tweets_text = []
-tweets_id = []
-tweets_user = []
-tweets_movie = []
-tweets_numfavs = []
-tweets_numrt = []
+# tweets_text = []
+# tweets_id = []
+# tweets_user = []
+# tweets_movie = []
+# tweets_numfavs = []
+# tweets_numrt = []
 
-for x in mentions_list:
-	tweets_text.append(x['text'])
-	tweets_id.append(x['id'])
-	tweets_user.append(x['user']['name'])
-	tweets_movie.append('none') #I am going to eventually get data from Movies data using a query. This may be easier with a class as well
-	#but I was lost on what to do currently.
-	tweets_numfavs.append(x['user']['favourites_count'])
-	tweets_numrt.append(x['retweet_count'])
+# for x in mentions_list:
+# 	tweets_text.append(x['text'])
+# 	tweets_id.append(x['id'])
+# 	tweets_user.append(x['user']['name'])
+# 	tweets_movie.append('none')
+# 	tweets_numfavs.append(x['user']['favourites_count'])
+# 	tweets_numrt.append(x['retweet_count'])
 
-tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
 
-for info in tweets_list:
-	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
-	cur.execute(y, info)
+# tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
 
-conn.commit()
+# for info in tweets_list:
+# 	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
+# 	cur.execute(y, info)
 
-conn.close()
+# conn.commit()
+
+# conn.close()
+
+
 
 
 # #CREATING A CSV FILE
