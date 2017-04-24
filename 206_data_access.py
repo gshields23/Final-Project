@@ -39,24 +39,20 @@ import twitter_info
 
 # Steps of the Project:
 
-# 1 - Write functions to get and cache data from Twitter 															- Done! But might be wrong
+# 1 - Write functions to get and cache data from Twitter 															- Done! 
 # 2 - Write function to get and cache data from OMDB 																- Done!
-# 3 - Define a class Movie - must accept a dictionary, should have 3 instance variables, 2 methods					-
+# 3 - Define a class Movie - must accept a dictionary, should have 3 instance variables, 2 methods					- Done!
 # 4 - Pick 3 movie title search terms of OMDB 																		- Done!
-# 5 - Make a request to OMDB on each of those search terms, using your function, then accumulate in dictionary		-
-# 6 - Create a list of instances of class Movie (using dictionaries from OMDB request)								-
-# 7 - Use Twitter to search for one star actor in each movie,get info about each user who posted a tweet about them -
-# 8 - Create database file with 3 tables																			- Done!
-# 9 - Load data into databases																						- Done! (may have to change)
+# 5 - Make a request to OMDB on each of those search terms, using your function, then accumulate in dictionary		- Done!
+# 6 - Create a list of instances of class Movie (using dictionaries from OMDB request)								- 
+# 7 - Use Twitter to search for one star actor in each movie,get info about each user who posted a tweet about them - 
+# 8 - Create database file with 3 tables, Create queries															- **MAKE QUERIES**
+# 9 - Load data into databases																						- Done!
 #10 - Process data and create an output file 																		-
 #11 - Write that data to a text file as a summary stats page														-
-																													
-																													#1/2 way done!
+#12 - Make tests for the entire code 																				-
 
-
-
-# I want to set up my class Movie here. I know a lot of my code will change once I get this class set up.
-
+																												
 
 movie_titles = ['Moonlight', 'La La Land', 'Lion']
 
@@ -92,12 +88,6 @@ class Twitter():
 		self.followers = diction['user']['followers_count']
 
 
-#OMDB search
-#create movie objects
-#search twitter using movie objects 
-
-
-
 #TWITTER SET UP CODE - below is my set up for Twitter caching.
 consumer_key = twitter_info.consumer_key
 consumer_secret = twitter_info.consumer_secret
@@ -117,7 +107,7 @@ try:
 except:
 	CACHE_DICTION = {}
 
-#OMDB CACHING - here is where I get and cache data from OMDB. 
+#OMDB CACHING  
 def getdata_omdb(title):
 	unique_identifier = "omdb_{}".format(title)
 
@@ -140,15 +130,7 @@ def getdata_omdb(title):
 		return omdb_dict
 
 
-movieinfo = []
-for movie in movie_titles:
-	x = Movie(getdata_omdb(movie))
-	movieinfo.append(x)
-
-
-
-#TWITTER API - here is my first function about retrieving information about a user specifically on Twitter.
-#I tested it with Ryan Gosling's username. He's the highest paid actor in La La Land (or the first mentioned)
+#TWITTER CACHING 
 def getTwitterUsername(actor_username):
 	unique_identifier = "twitter_{}".format(actor_username)
 	if unique_identifier in CACHE_DICTION:
@@ -167,9 +149,6 @@ def getTwitterUsername(actor_username):
 
 
 def getTwitterMentions(title): #Here is my data for seeing all public tweets/mentions on Twitter. 
-#I thought that if I put in 'La La Land' I'd get data about all Tweets from La La Land, but I actually just got my
-#personal information. When I put in 'ryangosling' I get all of his tweets. I'm not sure if this has to do with the fact
-#that I don't have a class yet or not, but I'll need to fix this.
 	unique_identifier = "twitter_{}".format(title)
 	if unique_identifier in CACHE_DICTION:
 		print('using cached Twitter data for', title)
@@ -188,21 +167,8 @@ def getTwitterMentions(title): #Here is my data for seeing all public tweets/men
 	
 
 
-twitterinfo = []
-for movie in movie_titles:
-	if movie == 'Lion':
-		print (movie)
-		y = getTwitterMentions(movie)
-		for x in y['statuses']:
-			print (x['text'])	
-
-
-#diction = getdata_omdb('La La Land') #What I'm using to enter info into my database
-#This code successfully works and I am more confident in it than my Twitter data.
-
 #Code that creates a database file and tables as your project plan explains, such that your program can be run over and over again without error and without duplicate rows in your tables.
-#I don't know how to specifically cover for having duplicates or not. I think by having the specific IDs as the primary key,
-#everything will be unique.
+
 conn = sqlite3.connect('final_project.db')
 cur = conn.cursor()
 
@@ -226,34 +192,17 @@ table += 'Tweets (tweet TEXT, tweet_id INTEGER PRIMARY KEY, user_id TEXT NOT NUL
 cur.execute(table)
 
 
-
-# #TWITTER PROCESSING FOR USERS - here I'm mining for the specific data that I want to upload to the database (for OMDB too)
-# users_userid = []
-# users_screenname = []
-# users_favs = []
-# users_followers = []
-
-# for users in users_list:
-# 	users_userid.append(users['user']['id_str'])
-# 	users_screenname.append(users['user']['screen_name'])
-# 	users_favs.append(users['user']['favourites_count'])
-# 	users_followers.append(users['user']['followers_count']) #I added this to see which actor would have the most followers
-
-# user_list = list(zip(users_userid, users_screenname, users_favs, users_followers))
-
-# for users in user_list:
-# 	z = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
-# 	cur.execute(z, users)
-
-
-# # #OMDB PROCESSING
-# id = []
-# title = []
-# director = []
-# num_langs = []
-# imdb_rating = []
-# firstactor = []
-
+#OMDB DATA - doesn't work
+movieinfo = []
+id = []
+title = []
+director = []
+num_langs = []
+imdb_rating = []
+firstactor = []
+for movie in movie_titles:
+	x = Movie(getdata_omdb(movie))
+	movieinfo.append(x)
 
 # id.append(diction['imdbID'])
 # title.append(diction['Title'])
@@ -262,35 +211,60 @@ cur.execute(table)
 # imdb_rating.append(diction['imdbRating'])
 # firstactor.append(diction['Actors'].split(',', 1)[0]) #I had to do this to get the first full name listed
 
+omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
+omdb_list = list(omdb_zip)
 
-# omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
-# omdb_list = list(omdb_zip)
 
-# # print(type(omdb_zip))
+for movie_info in omdb_list:
+	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
+	cur.execute(y, movie_info)
 
-# for movie_info in omdb_list:
-# 	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
-# 	cur.execute(y, movie_info)
+#TWEETS DATA - works
+# twitterinfo = []
+tweets_text = []
+tweets_id = []
+tweets_user = []
+tweets_movie = []
+tweets_numfavs = []
+tweets_numrt = []
 
-# print(firstactor)
+for movie in movie_titles:
+	twitobject = getTwitterMentions(movie)
+	for lst in twitobject['statuses']:
+		tweets_text.append((lst['text']))
+		tweets_id.append(lst['id'])
+		tweets_user.append(lst['user']['name'])
+		tweets_numfavs.append(lst['user']['favourites_count'])
+		tweets_numrt.append(lst['retweet_count'])
+		if 'Moonlight' in lst['text']:
+			tweets_movie.append('Moonlight')
+		if 'Lion' in lst['text']:
+			tweets_movie.append('Lion')
+		if 'La La Land' in lst['text']:
+			tweets_movie.append('La La Land')
 
-#TWITTER PROCESSING FOR TWEETS (MENTIONS: BE SURE TO USE THE MOVIE ID NOT THE MOVIE TITLE)
-#I made this one last because it refers to other tables (Movies)
-# tweets_text = []
-# tweets_id = []
-# tweets_user = []
-# tweets_movie = []
-# tweets_numfavs = []
-# tweets_numrt = []
 
-# for x in mentions_list:
-# 	tweets_text.append(x['text'])
-# 	tweets_id.append(x['id'])
-# 	tweets_user.append(x['user']['name'])
-# 	tweets_movie.append('none')
-# 	tweets_numfavs.append(x['user']['favourites_count'])
-# 	tweets_numrt.append(x['retweet_count'])
+tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
 
+# print(twitobject)
+
+for info in tweets_list:
+	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
+	cur.execute(y, info)
+
+
+# USERS DATA 
+
+users_userid = []
+users_screenname = []
+users_favs = []
+users_followers = []
+
+# for users in tweets_list:
+# 	users_userid.append(tweets_list['user']['id_str'])
+# 	users_screenname.append(tweets_list['user']['screen_name'])
+# 	users_favs.append(tweets_list['user']['favourites_count'])
+# 	users_followers.append(tweets_list['user']['followers_count']) #I added this to see which actor would have the most followers
 
 # tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
 
@@ -298,16 +272,26 @@ cur.execute(table)
 # 	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
 # 	cur.execute(y, info)
 
-# conn.commit()
-
-# conn.close()
+conn.commit()
 
 
+
+
+#QUERIES
+x = 'SELECT * FROM Tweets WHERE number_favorites > 5'
+cur.execute(x)
+total = cur.fetchall()
+num_of_users = len(total) #287
 
 
 # #CREATING A CSV FILE
-# outfile = open('finalproject.csv', 'w')
-# outfile.write('self.title, self.list_actors\n')
+outfile = open('finalproject.csv', 'w')
+outfile.write('\n')
+outfile.write('data')
+
+# f = open('file.txt','w')
+# a = input('final project')
+# f.close()
 
 
 # for x in possible_airports:
@@ -318,46 +302,49 @@ cur.execute(table)
 #         print "Failed for airport " + x
 
 
+
+conn.close()
+
 #Tests at the end of your file that accord with those instructions (will test that you completed those instructions correctly!)
-class Tests(unittest.TestCase):
-	def test1(self): #tests that there are 6 rows in the Tweets table
-		conn = sqlite3.connect('final_project.db') 
-		cur = conn.cursor()
-		cur.execute('SELECT * FROM Tweets');
-		result = cur.fetchall()
-		self.assertTrue(len(result[0])==6)
-		conn.close()
+# class Tests(unittest.TestCase):
+# 	def test1(self): #tests that there are 6 rows in the Tweets table
+# 		conn = sqlite3.connect('final_project.db') 
+# 		cur = conn.cursor()
+# 		cur.execute('SELECT * FROM Tweets');
+# 		result = cur.fetchall()
+# 		self.assertTrue(len(result[0])==6)
+# 		conn.close()
 
-	def test2(self): #tests that there are 4 rows in the Users table
-		conn = sqlite3.connect('final_project.db')
-		cur = conn.cursor()
-		cur.execute('SELECT * FROM Users');
-		result = cur.fetchall()
-		self.assertTrue(len(result[0])==4)
-		conn.close()
+# 	def test2(self): #tests that there are 4 rows in the Users table
+# 		conn = sqlite3.connect('final_project.db')
+# 		cur = conn.cursor()
+# 		cur.execute('SELECT * FROM Users');
+# 		result = cur.fetchall()
+# 		self.assertTrue(len(result[0])==4)
+# 		conn.close()
 	
-	def test3(self): #tests that there are 6 rows in the Movies table
-		conn = sqlite3.connect('final_project.db')
-		cur = conn.cursor()
-		cur.execute('SELECT * FROM Movies');
-		result = cur.fetchall()
-		self.assertTrue(len(result[0])==6)
-		conn.close()
+# 	def test3(self): #tests that there are 6 rows in the Movies table
+# 		conn = sqlite3.connect('final_project.db')
+# 		cur = conn.cursor()
+# 		cur.execute('SELECT * FROM Movies');
+# 		result = cur.fetchall()
+# 		self.assertTrue(len(result[0])==6)
+# 		conn.close()
 
-	def test4(self): #tests that first actor returns one string, the full name of an actor
-		self.assertEqual(len(firstactor), 1)
+# 	def test4(self): #tests that first actor returns one string, the full name of an actor
+# 		self.assertEqual(len(firstactor), 1)
 
-	def test5(self): #tests that the Movie id is a string instead of an integer (I had an issue with this where I expected it to be an integer and it wasn't!)
-	 	self.assertEqual(type(id[0]),type(""))
+# 	def test5(self): #tests that the Movie id is a string instead of an integer (I had an issue with this where I expected it to be an integer and it wasn't!)
+# 	 	self.assertEqual(type(id[0]),type(""))
 
-	def test6(self): #tests that my list for OMBD is indeed a list
-		self.assertEqual(type(omdb_list),type([]))
+# 	def test6(self): #tests that my list for OMBD is indeed a list
+# 		self.assertEqual(type(omdb_list),type([]))
 
-	def test7(self):
-		self.assertEqual(type(mentions_list), type([]))
+# 	def test7(self):
+# 		self.assertEqual(type(mentions_list), type([]))
 
-	def test8(self): 
-		self.assertEqual(type(user_list),type([]))
+# 	def test8(self): 
+# 		self.assertEqual(type(user_list),type([]))
 
 
 
@@ -383,8 +370,4 @@ class Tests(unittest.TestCase):
 	# 	self.assertEqual(type(test10[0],type(["Emma Stone", "Ryan Gosling"])))
 
     
-
-if __name__ == "__main__":
-	unittest.main(verbosity=2)
-
-# Remember to invoke your tests so they will run! (Recommend using the verbosity=2 argument.)
+             
