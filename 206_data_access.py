@@ -44,13 +44,12 @@ import twitter_info
 # 3 - Define a class Movie - must accept a dictionary, should have 3 instance variables, 2 methods					- Done!
 # 4 - Pick 3 movie title search terms of OMDB 																		- Done!
 # 5 - Make a request to OMDB on each of those search terms, using your function, then accumulate in dictionary		- Done!
-# 6 - Create a list of instances of class Movie (using dictionaries from OMDB request)								- 
-# 7 - Use Twitter to search for one star actor in each movie,get info about each user who posted a tweet about them - 
+# 6 - Create a list of instances of class Movie (using dictionaries from OMDB request)								- Done!
+# 7 - Use Twitter to search for one star actor in each movie,get info about each user who posted a tweet about them - Done!
 # 8 - Create database file with 3 tables, Create queries															- **MAKE QUERIES**
 # 9 - Load data into databases																						- Done!
-#10 - Process data and create an output file 																		-
-#11 - Write that data to a text file as a summary stats page														-
-#12 - Make tests for the entire code 																				-
+#10 - Process data and create an output file, Write that data to a text file as a summary stats page				-													-
+#11 - Make tests for the entire code 																				-
 
 																												
 
@@ -58,6 +57,7 @@ movie_titles = ['Moonlight', 'La La Land', 'Lion']
 
 class Movie():
 	def __init__(self, diction):
+		self.id = diction['imdbID']
 		self.title = diction['Title']
 		self.director = diction['Director'].split(',')[0]
 		self.imdb_rating = diction['Ratings']
@@ -75,12 +75,18 @@ class Movie():
 	def getTitle(self):
 		return self.title
 
+	def getDatabaseInfo(self):
+		rating = self.imdb_rating[0]['Value']
+		rating = float(rating.split('/')[0])
+
+
+		return (self.id, self.title, self.director, rating, self.list_actors, self.num_langs, self.actor)
+
 class Twitter():
 	def __init__(self, diction):
 		self.text = diction['statuses']['text']
 		self.id = diction['id']
 		self.user = diction['user']['name']
-		self.movie = 'none'
 		self.favorites = diction['user']['favourites_count']
 		self.retweets = diction['retweet_count']
 		self.userid = diction['user']['id_str']
@@ -131,33 +137,35 @@ def getdata_omdb(title):
 
 
 #TWITTER CACHING 
-def getTwitterUsername(actor_username):
-	unique_identifier = "twitter_{}".format(actor_username)
+def getTwitterUsername(user):
+	unique_identifier = "twitter_{}".format(user)
 	if unique_identifier in CACHE_DICTION:
-		print('using cached Twitter data for', actor_username)
+		print('using cached Twitter data for', user)
 		statuses = CACHE_DICTION[unique_identifier]
 		pass
 	else:
-		print('getting data from Twitter for', actor_username)
-		statuses = api.user_timeline(screen_name=actor_username, count = 100)
+		print('getting data from Twitter for', user)
+			
+		statuses = api.get_user(id=user)
 		CACHE_DICTION[unique_identifier] = statuses
 		f=open(CACHE_FNAME, 'w')
 		f.write(json.dumps(CACHE_DICTION))
 		f.close()
-
+		
+	
 	return statuses
+
 
 
 def getTwitterMentions(title): #Here is my data for seeing all public tweets/mentions on Twitter. 
 	unique_identifier = "twitter_{}".format(title)
 	if unique_identifier in CACHE_DICTION:
 		print('using cached Twitter data for', title)
-		#twitter_results = CACHE_DICTION[unique_identifier]
 		statuses = CACHE_DICTION[unique_identifier]
 		pass
 	else:
 		print('getting data from Twitter for', title)
-		statuses = api.search(q=title, count = 100) #search should sift through all public data
+		statuses = api.search(q=title, count = 20) #search should sift through all public data
 		CACHE_DICTION[unique_identifier] = statuses
 		f=open(CACHE_FNAME, 'w')
 		f.write(json.dumps(CACHE_DICTION))
@@ -188,11 +196,11 @@ cur.execute(table)
 #TWEETS TABLE
 cur.execute('DROP TABLE IF EXISTS Tweets')
 table = 'CREATE TABLE IF NOT EXISTS '
-table += 'Tweets (tweet TEXT, tweet_id INTEGER PRIMARY KEY, user_id TEXT NOT NULL, movie_title TEXT NOT NULL, number_favorites INTEGER, number_retweets INTEGER, FOREIGN KEY (user_id) REFERENCES Users(user_id) on UPDATE SET NULL, FOREIGN KEY (movie_title) REFERENCES Movies(movie_title) on UPDATE SET NULL)'
+table += 'Tweets (tweet TEXT, tweet_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, movie_title TEXT NOT NULL, number_favorites INTEGER, number_retweets INTEGER, FOREIGN KEY (user_id) REFERENCES Users(user_id) on UPDATE SET NULL, FOREIGN KEY (movie_title) REFERENCES Movies(movie_title) on UPDATE SET NULL)'
 cur.execute(table)
 
 
-#OMDB DATA - doesn't work
+#OMDB DATA 
 movieinfo = []
 id = []
 title = []
@@ -200,24 +208,30 @@ director = []
 num_langs = []
 imdb_rating = []
 firstactor = []
+
+
 for movie in movie_titles:
-	x = Movie(getdata_omdb(movie))
-	movieinfo.append(x)
+	current_movie = Movie(getdata_omdb(movie))
+	movieinfo.append(current_movie)
+	movie_tup = current_movie.getDatabaseInfo()
 
-# id.append(diction['imdbID'])
-# title.append(diction['Title'])
-# director.append(diction['Director'])
-# num_langs.append(len(diction['Language']))
-# imdb_rating.append(diction['imdbRating'])
-# firstactor.append(diction['Actors'].split(',', 1)[0]) #I had to do this to get the first full name listed
+	id.append(movie_tup[0])
+	title.append(movie_tup[1])
+	director.append(movie_tup[2])
+	num_langs.append(movie_tup[5])
+	imdb_rating.append(movie_tup[3])
+	firstactor.append(movie_tup[6])
 
-omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
-omdb_list = list(omdb_zip)
+	omdb_zip = zip(id, title, director, num_langs, imdb_rating, firstactor)
+	omdb_list = list(omdb_zip)
 
 
-for movie_info in omdb_list:
-	y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
-	cur.execute(y, movie_info)
+	for movie_info in omdb_list:
+		y = 'INSERT OR IGNORE INTO Movies VALUES (?,?,?,?,?,?)'
+		cur.execute(y, movie_info)
+
+
+
 
 #TWEETS DATA - works
 # twitterinfo = []
@@ -228,25 +242,29 @@ tweets_movie = []
 tweets_numfavs = []
 tweets_numrt = []
 
+twitter_users = []
+
 for movie in movie_titles:
 	twitobject = getTwitterMentions(movie)
 	for lst in twitobject['statuses']:
 		tweets_text.append((lst['text']))
+		tweets_movie.append(movie)
 		tweets_id.append(lst['id'])
-		tweets_user.append(lst['user']['name'])
+		tweets_user.append(lst['user']['id'])
 		tweets_numfavs.append(lst['user']['favourites_count'])
 		tweets_numrt.append(lst['retweet_count'])
-		if 'Moonlight' in lst['text']:
-			tweets_movie.append('Moonlight')
-		if 'Lion' in lst['text']:
-			tweets_movie.append('Lion')
-		if 'La La Land' in lst['text']:
-			tweets_movie.append('La La Land')
+	
+		userId = lst['user']['id']
+		if userId not in twitter_users:
+			twitter_users.append(userId)
+
+		if lst['entities']['user_mentions'] != "":
+			for x in lst['entities']['user_mentions']:
+				if x['id'] not in twitter_users:
+					twitter_users.append(x['id'])
 
 
 tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
-
-# print(twitobject)
 
 for info in tweets_list:
 	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
@@ -260,28 +278,43 @@ users_screenname = []
 users_favs = []
 users_followers = []
 
-# for users in tweets_list:
-# 	users_userid.append(tweets_list['user']['id_str'])
-# 	users_screenname.append(tweets_list['user']['screen_name'])
-# 	users_favs.append(tweets_list['user']['favourites_count'])
-# 	users_followers.append(tweets_list['user']['followers_count']) #I added this to see which actor would have the most followers
+for user in twitter_users:
+	# print ("*****TESTING*******")	
+	# print (user)	
+	userobj = getTwitterUsername(user)
 
-# tweets_list = list(zip(tweets_text, tweets_id, tweets_user, tweets_movie, tweets_numfavs, tweets_numrt))
+	# for x in userobj:
+	# 	print (x)
 
-# for info in tweets_list:
-# 	y = 'INSERT OR IGNORE INTO Tweets VALUES (?,?,?,?,?,?)'
-# 	cur.execute(y, info)
+	users_userid.append(userobj['id'])
+	users_screenname.append(userobj['screen_name'])		
+	users_favs.append(userobj['favourites_count'])
+	if 'status' in userobj:	
+		users_followers.append(userobj['status']['retweet_count'])
+	else:
+		users_followers.append(0)
+
+users_lst = list(zip(users_userid, users_screenname, users_favs, users_followers))
+
+for info in users_lst:
+	y = 'INSERT OR IGNORE INTO Users VALUES (?,?,?,?)'
+	cur.execute(y, info)
 
 conn.commit()
 
 
 
 
-#QUERIES
+#QUERY 1
 x = 'SELECT * FROM Tweets WHERE number_favorites > 5'
 cur.execute(x)
 total = cur.fetchall()
 num_of_users = len(total) #287
+
+#QUERY 2
+
+
+#QUERY 3
 
 
 # #CREATING A CSV FILE
