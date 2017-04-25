@@ -1,19 +1,3 @@
-###### INSTRUCTIONS ###### 
-
-# An outline for preparing your final project assignment is in this file.
-
-# Below, throughout this file, you should put comments that explain exactly what you should do for each step of your project. You should specify variable names and processes to use. For example, "Use dictionary accumulation with the list you just created to create a dictionary called tag_counts, where the keys represent tags on flickr photos and the values represent frequency of times those tags occur in the list."
-
-# You can use second person ("You should...") or first person ("I will...") or whatever is comfortable for you, as long as you are clear about what should be done.
-
-# Some parts of the code should already be filled in when you turn this in:
-# - At least 1 function which gets and caches data from 1 of your data sources, and an invocation of each of those functions to show that they work 
-# - Tests at the end of your file that accord with those instructions (will test that you completed those instructions correctly!)
-# - Code that creates a database file and tables as your project plan explains, such that your program can be run over and over again without error and without duplicate rows in your tables.
-# - At least enough code to load data into 1 of your database tables (this should accord with your instructions/tests)
-
-######### END INSTRUCTIONS #########
-
 # Put all import statements you need here.
 import unittest
 import json
@@ -23,22 +7,7 @@ from collections import Counter
 import sqlite3
 import twitter_info
 import re
-
-# Steps of the Project:
-
-# 1 - Write functions to get and cache data from Twitter 															- Done! 
-# 2 - Write function to get and cache data from OMDB 																- Done!
-# 3 - Define a class Movie - must accept a dictionary, should have 3 instance variables, 2 methods					- Done!
-# 4 - Pick 3 movie title search terms of OMDB 																		- Done!
-# 5 - Make a request to OMDB on each of those search terms, using your function, then accumulate in dictionary		- Done!
-# 6 - Create a list of instances of class Movie (using dictionaries from OMDB request)								- Done!
-# 7 - Use Twitter to search for one star actor in each movie,get info about each user who posted a tweet about them - Done!
-# 8 - Create database file with 3 tables, Create queries															- **MAKE QUERIES**
-# 9 - Load data into databases																						- Done!
-#10 - Process data and create an output file, Write that data to a text file as a summary stats page				-													-
-#11 - Make tests for the entire code 																				- Done!
-
-																												
+																								
 
 movie_titles = ['Moonlight', 'La La Land', 'Lion']
 
@@ -53,8 +22,9 @@ class Movie():
 		self.actor = diction['Actors'].split(',', 1)[0]
 		self.awards = diction['Awards']
 		
-	def __str__(self): #still figuring out what to do with this
-		return "{} from {}".format(self.list_actors, self.title) 
+	def __str__(self):
+		return "{} = {}".format(self.title, self.awards) 
+
 
 	def getActor(self):
 		return self.actor
@@ -251,7 +221,6 @@ for info in tweets_list:
 
 
 # USERS DATA 
-
 users_userid = []
 users_screenname = []
 users_favs = []
@@ -259,7 +228,6 @@ users_followers = []
 
 for user in twitter_users:
 	userobj = getTwitterUsername(user)
-
 	users_userid.append(userobj['id'])
 	users_screenname.append(userobj['screen_name'])		
 	users_favs.append(userobj['favourites_count'])
@@ -276,18 +244,13 @@ for info in users_lst:
 
 conn.commit()
 
-
-#There was a lot of controversy on Oscar night. I want to see which "best movie" nominated movie 
-#is actually the most popular. Moonlight won the Oscar, but let's see how their follower base matches up!
-
+#QUERIES
 
 #QUERY 1 - sort function, most retweets
 x = 'SELECT SUM(Tweets.number_retweets), Tweets.movie_title FROM Tweets GROUP BY movie_title'
 cur.execute(x)
 movie_rt = cur.fetchall()
-print("\nQUERY 1")
 sorted_retweets = sorted(movie_rt, reverse = True)
-print(sorted_retweets)
 
 
 #QUERY 2 
@@ -296,43 +259,65 @@ cur.execute(y)
 favs_users = cur.fetchall()
 sorted_favorites = sorted(favs_users, reverse = True)
 
-print("\nQUERY 2")
-print(sorted_favorites)
 
 #QUERY 3 - reg ex
 z = 'SELECT SUM(Tweets.number_retweets), Movies.movie_title, Movies.awards FROM Movies INNER JOIN Tweets ON Tweets.movie_title = Movies.movie_title GROUP BY Tweets.movie_title'
 cur.execute(z)
 lst_awards = cur.fetchall()
-print("\nQUERY 3")
 for x in lst_awards:
-	#print(x)
 	regex_z = r"(?:Won).[0-9]"
 	sep_awards = re.findall(regex_z, x[2])
 	output = '{}, {}'.format(x[1], sep_awards)
-	print(output)
-
-
-
-# sorted_awards = lst_awards.split(" ").sort([1])
-# print(sorted_awards)
 
 
 #QUERY 4
 a = 'SELECT Movies.movie_title, Tweets.number_retweets FROM Tweets INNER JOIN Movies ON Tweets.movie_title = Movies.movie_title WHERE Tweets.number_retweets > 1000'
 cur.execute(a)
 movieRT_lst = cur.fetchall()
-print("\nQUERY 4")
 
 x = [element[0] for element in movieRT_lst]
 c = Counter(x)
-print(c)
 
 
-# #CREATING A txt FILE
+# #CREATING A TXT FILE
 outfile = open('finalproject.txt', 'w')
 outfile.write("\n                      Summary Statistics for Movies & Twitter \n")
-outfile.write("\nThe 2017 Oscars spiked controversy when 'Moonlight' took home Best Film, even though 'La La Land' was mistakenly announced first as the winner. People around the world argued for what they felt was the better movie. I decided to look at Twitter data for 'La La Land,' 'Moonlight,' and 'Lion' to see which movie spiked the most discussion online, for better or for worse.")
+outfile.write("\nThe 2017 Oscars spiked controversy when 'Moonlight' took home Best Film, even though 'La La Land' was mistakenly announced first as the winner. People around the world argued for what they felt was the better movie. I decided to look at Twitter data for 'La La Land,' 'Moonlight,' and 'Lion' to see which movie spiked the most discussion online, for better or for worse. \n")
 
+#awards
+outfile.write("\nDATA FOR MOVIES AND OSCAR AWARDS:\n")
+z = 'SELECT SUM(Tweets.number_retweets), Movies.movie_title, Movies.awards FROM Movies INNER JOIN Tweets ON Tweets.movie_title = Movies.movie_title GROUP BY Tweets.movie_title'
+cur.execute(z)
+lst_awards = cur.fetchall()
+for x in lst_awards:
+	regex_z = r"(?:Won).[0-9]"
+	sep_awards = re.findall(regex_z, x[2])
+	output = '{}, {}'.format(x[1], sep_awards)
+	outfile.write("\n")
+	outfile.write(output) 
+outfile.write("\n(Empty brackets signify that no Oscar awards were given.)\n \n \n")
+
+#retweets
+outfile.write("DATA FOR MOVIES AND RETWEETS ON TWITTER:\n")
+outfile.write("\nWhen looking at which movie's tweets had the most amount of retweets on Twitter, ")
+outfile.write(str(sorted_retweets[0][1]))
+outfile.write(" had the most amount of retweets with ")
+outfile.write(str(sorted_retweets[0][0]))
+outfile.write(" retweets in total. This implies that this movie has the most popularity on Twitter. \n \n")
+
+#favorites
+outfile.write("DATA FOR MOVIES AND FAVORITES ON TWITTER:\n")
+outfile.write("\nWhen looking at which user discussing which movie had the most amount of favorites on Twitter, users who discussed ")
+outfile.write(str(sorted_favorites[0][1]))
+outfile.write(" had favorited the most amount of tweets with ")
+outfile.write(str(sorted_favorites[0][0]))
+outfile.write(" favorites in total. This implies that this movie's users are the most active on Twitter. \n \n")
+
+outfile.write("The following data displays the movie title and how many tweets (discussing that movie) were retweeted more than 1000 times: \n")
+outfile.write(str(c))
+outfile.write("\n \n \n")
+
+outfile.write("This data may prove that Twitter users disagree with the Academy on which movie deserves Best Film.")
 
 outfile.close()
 
@@ -340,7 +325,7 @@ conn.close()
 
 #Tests at the end of your file that accord with those instructions (will test that you completed those instructions correctly!)
 class Tests(unittest.TestCase):
-	def test1(self): #tests that there are 6 rows in the Tweets table
+	def test_1(self): #tests that there are 6 rows in the Tweets table
 		conn = sqlite3.connect('final_project.db') 
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Tweets');
@@ -348,7 +333,7 @@ class Tests(unittest.TestCase):
 		self.assertTrue(len(result[0])==6)
 		conn.close()
 
-	def test2(self): #tests that there are 4 rows in the Users table
+	def test_2(self): #tests that there are 4 rows in the Users table
 		conn = sqlite3.connect('final_project.db')
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Users');
@@ -356,7 +341,7 @@ class Tests(unittest.TestCase):
 		self.assertTrue(len(result[0])==4)
 		conn.close()
 	
-	def test3(self): #tests that there are 7 rows in the Movies table
+	def test_3(self): #tests that there are 7 rows in the Movies table
 		conn = sqlite3.connect('final_project.db')
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Movies');
@@ -364,35 +349,55 @@ class Tests(unittest.TestCase):
 		self.assertTrue(len(result[0])==7)
 		conn.close()
 
-	def test4(self): #tests that the Movie id is a string instead of an integer (I had an issue with this where I expected it to be an integer and it wasn't!)
+	def test_4(self): #tests that the Movie id is a string instead of an integer (I had an issue with this where I expected it to be an integer and it wasn't!)
 	 	self.assertEqual(type(id[0]),type(""))
 
-	def test5(self): #tests that my list for OMBD is indeed a list
+	def test_5(self): #tests that my list for OMBD is indeed a list
 		self.assertEqual(type(omdb_list),type([]))
 
-	def test6(self):
+	def test_6(self):
 		m = Movie(getdata_omdb('La La Land'))
 		self.assertEqual(len(m.getDatabaseInfo()), 8)
 
-	def test7(self):
+	def test_7(self):
 		m = Movie(getdata_omdb('La La Land'))
 		self.assertEqual(type(m.getTitle()), type(""))
 
-	def test8(self): 
+	def test_8(self): 
 		m = Movie(getdata_omdb('La La Land'))
 		self.assertEqual(type(m.getDatabaseInfo()), type((1,2,3)))
  
-	def test9(self): 
+	def test_9(self): 
 		m = Movie(getdata_omdb('Moonlight'))
 		self.assertEqual(type(m.id), type(""))
 
-	# def test10(self):
-	# 	t = Twitter(getTwitterMentions('La La Land'))
-	# 	self.assertEqual(type(t.text), type(1))
-
-	def test11(self):
+	def testb(self):
 		m = Movie(getdata_omdb('Lion'))
-		self.assertEqual(len(m.__str__().split()), 10)
+		self.assertEqual(type(m.__str__().split()), type([]))
+
+	def testc(self):
+		self.assertEqual(type(sorted_favorites), type([]))
+
+	def testd(self):
+		self.assertEqual(type(sorted_retweets), type([]))
+
+	def teste(self):
+		self.assertEqual(type(output), type(""))
+
+	def testf(self):
+		self.assertEqual(type(x), type((1,2,3)))
+
+	def testg(self):
+		x = getdata_omdb('La La Land')
+		self.assertEqual(type(x), type({}))
+
+	def testg(self):
+		x = getTwitterUsername('La La Land')
+		self.assertEqual(type(x), type({}))
+
+	def testg(self):
+		x = getTwitterMentions('La La Land')
+		self.assertEqual(type(x), type({}))
 
 
 if __name__ == "__main__":
