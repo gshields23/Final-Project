@@ -19,7 +19,7 @@ import unittest
 import json
 import requests
 import tweepy
-import collections
+from collections import Counter
 import sqlite3
 import twitter_info
 import re
@@ -280,61 +280,52 @@ conn.commit()
 #There was a lot of controversy on Oscar night. I want to see which "best movie" nominated movie 
 #is actually the most popular. Moonlight won the Oscar, but let's see how their follower base matches up!
 
-#list comprehension []
-#collection
-#sort
-#itertools??
 
-#IDEAS:
-#See which movie tweets have the most retweets
-#See which movie tweets have the most favorites
-#See which movie's tweets users have the most followers
-
-
+#QUERY 1 - sort function, most retweets
 x = 'SELECT SUM(Tweets.number_retweets), Tweets.movie_title FROM Tweets GROUP BY movie_title'
 cur.execute(x)
-(cur.fetchall())
+movie_rt = cur.fetchall()
+print("\nQUERY 1")
+sorted_retweets = sorted(movie_rt, reverse = True)
+print(sorted_retweets)
 
 
-# y = 'SELECT SUM(Users.num_favs), Tweets.movie_title FROM Users GROUP BY movie_title'
-# cur.execute(y)
-# print (cur.fetchall())
+#QUERY 2 
+y = 'SELECT SUM(Users.num_favs), Tweets.movie_title FROM Users INNER JOIN Tweets GROUP BY movie_title'
+cur.execute(y)
+favs_users = cur.fetchall()
+sorted_favorites = sorted(favs_users, reverse = True)
 
+print("\nQUERY 2")
+print(sorted_favorites)
+
+#QUERY 3 - reg ex
 z = 'SELECT SUM(Tweets.number_retweets), Movies.movie_title, Movies.awards FROM Movies INNER JOIN Tweets ON Tweets.movie_title = Movies.movie_title GROUP BY Tweets.movie_title'
 cur.execute(z)
 lst_awards = cur.fetchall()
+print("\nQUERY 3")
 for x in lst_awards:
+	#print(x)
 	regex_z = r"(?:Won).[0-9]"
-	d = re.findall(regex_z, x[2])
-	print(d)
-print(lst_awards)
+	sep_awards = re.findall(regex_z, x[2])
+	output = '{}, {}'.format(x[1], sep_awards)
+	print(output)
 
 
-z = 'SELECT Tweets.tweet, Tweets.movie_title FROM Tweets'
-cur.execute(z)
-tweet_tup = cur.fetchall()
 
-num_men = {}
-
-for x in tweet_tup:
-	tweet_split = x[0].split()
-
-	for y in tweet_split:
-		if y == x[1]:
-
-			if y not in num_men:
-				num_men[x[1]] = 0
-
-			num_men[x[1]] += 1
-
-print ("***********")
-print (num_men)
+# sorted_awards = lst_awards.split(" ").sort([1])
+# print(sorted_awards)
 
 
+#QUERY 4
 a = 'SELECT Movies.movie_title, Tweets.number_retweets FROM Tweets INNER JOIN Movies ON Tweets.movie_title = Movies.movie_title WHERE Tweets.number_retweets > 1000'
 cur.execute(a)
-movieRT_tup = cur.fetchall()
+movieRT_lst = cur.fetchall()
+print("\nQUERY 4")
 
+x = [element[0] for element in movieRT_lst]
+c = Counter(x)
+print(c)
 
 
 # #CREATING A txt FILE
@@ -395,9 +386,9 @@ class Tests(unittest.TestCase):
 		m = Movie(getdata_omdb('Moonlight'))
 		self.assertEqual(type(m.id), type(""))
 
-	def test10(self):
-		t = Twitter(getTwitterMentions('La La Land'))
-		self.assertEqual(type(t.text), type(1))
+	# def test10(self):
+	# 	t = Twitter(getTwitterMentions('La La Land'))
+	# 	self.assertEqual(type(t.text), type(1))
 
 	def test11(self):
 		m = Movie(getdata_omdb('Lion'))
